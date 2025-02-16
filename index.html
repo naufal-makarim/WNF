@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Reader</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;700&display=swap');
+
+        body {
+            font-family: 'EB Garamond', serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f8f8;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1200px;
+            margin-top: 20px;
+        }
+
+        h1 {
+            color: #222;
+            text-align: center;
+            margin-bottom: 1em;
+        }
+
+        button, .chapter-button {
+            font-family: inherit;
+            padding: 0.7em 1.2em; /* Slightly larger buttons for touch */
+            border: 1px solid #ccc;
+            border-radius: 8px; /* More rounded buttons */
+            cursor: pointer;
+            background-color: #fff;
+            color: #333;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            font-size: 1em; /* Ensure good touch size */
+        }
+
+        button:hover, .chapter-button:hover {
+            background-color: #eee;
+            box-shadow: 0 3px 7px rgba(0,0,0,0.1);
+        }
+
+        /* Chapter Selection Styling */
+        #chapter-selection {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding: 20px;
+            border-radius: 12px; /* More rounded container */
+            background-color: #fff;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15); /* More pronounced shadow */
+            align-items: stretch;
+        }
+
+        .chapter-button {
+            padding: 1.2em; /* Larger chapter buttons for touch */
+            text-align: center; /* Center chapter text */
+            border: 1px solid #ddd;
+            background-color: #fefefe;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08); /* Slightly stronger shadow */
+            font-size: 1.1em; /* Slightly larger chapter names */
+        }
+
+        /* Chapter Page Styling */
+        #chapter-page {
+            display: none;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: #f8f8f8;
+            flex-direction: column;
+        }
+
+        #top-bar {
+            background-color: #fff;
+            padding: 1em;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            z-index: 10;
+            display: flex;
+            justify-content: center; /* Center items horizontally */
+            align-items: center;
+        }
+
+        #top-bar button {
+            position: absolute; /* Position back button to the left */
+            left: 1em;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 0.5em 0.7em; /* Adjust back button padding */
+            font-size: 1em;
+        }
+
+        #chapter-title {
+            margin: 0; /* Center title, remove default margins */
+            font-size: 1.2em; /* Slightly larger chapter title */
+        }
+
+        #sub-chapter-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            scroll-snap-type: y mandatory;
+            padding: 10px 0; /* Add some padding around sub-chapters */
+        }
+
+        .sub-chapter {
+            min-height: 90vh; /* Slightly less than full viewport for better readability */
+            padding: 2em 1.5em; /* Adjust horizontal padding */
+            scroll-snap-align: start;
+            display: flex;
+            flex-direction: column;
+            gap: 25px; /* Increase gap between sub-chapter elements */
+            align-items: center; /* Center content in sub-chapter */
+        }
+
+        .sub-chapter h2 {
+            position: relative;
+            text-align: center;
+            font-size: 1.5em; /* Larger sub-chapter titles */
+        }
+
+        .sub-chapter h2::before {
+            content: attr(data-sub-chapter-number);
+            display: block;
+            margin-bottom: 0.6em; /* Increase margin */
+            color: #888; /* Slightly lighter number color */
+            font-size: 1em; /* Slightly larger number font size */
+        }
+
+        .paragraph-container {
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            display: flex;
+            gap: 20px; /* Increase gap between paragraphs */
+            padding-bottom: 15px;
+            width: 100%; /* Paragraph container takes full width */
+            justify-content: flex-start; /* Align paragraphs to the start */
+        }
+
+        .paragraph-card {
+            min-width: 90vw;
+            max-height: 75vh; /* Slightly taller paragraph cards */
+            padding: 2em; /* Increase padding in paragraph cards */
+            border-radius: 12px; /* More rounded paragraph cards */
+            background-color: #fff;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.12); /* Slightly stronger shadow */
+            overflow-y: auto;
+            scroll-snap-align: start;
+            box-sizing: border-box;
+            position: relative;
+            font-size: 1.05em; /* Slightly larger paragraph text */
+        }
+
+        .paragraph-number {
+            position: absolute;
+            top: 15px; /* Adjust number position */
+            right: 15px;
+            font-size: 1em; /* Slightly larger paragraph number */
+            color: #888; /* Lighter paragraph number color */
+        }
+
+        .paragraph-card p {
+            line-height: 1.7; /* Increased line height for readability */
+            margin-bottom: 1.2em; /* Increased paragraph spacing */
+            text-align: justify;
+            word-wrap: break-word;
+            hyphens: auto;
+        }
+
+        /* Responsive adjustments for smaller screens (like iPhone SE) */
+        @media (max-width: 375px) {
+            .container {
+                width: 100%; /* Full width container on small screens */
+                margin-top: 10px; /* Reduce top margin on small screens */
+            }
+            #chapter-selection {
+                padding: 15px; /* Reduce padding for chapter selection */
+                gap: 10px; /* Reduce gap in chapter selection */
+            }
+            .chapter-button {
+                padding: 1em; /* Adjust chapter button padding for smaller screens */
+                font-size: 1em; /* Adjust chapter name font size */
+            }
+            #top-bar {
+                padding: 0.8em; /* Reduce top/bottom bar padding */
+            }
+            #chapter-title {
+                font-size: 1.1em; /* Adjust chapter title font size for small screens */
+            }
+            .sub-chapter {
+                padding: 1.5em 1em; /* Reduce sub-chapter padding */
+                gap: 20px; /* Adjust sub-chapter element gap */
+            }
+            .sub-chapter h2 {
+                font-size: 1.3em; /* Adjust sub-chapter title font size */
+            }
+            .paragraph-card {
+                padding: 1.5em; /* Reduce paragraph card padding */
+                font-size: 1em; /* Adjust paragraph text size */
+            }
+        }
+
+        @media (min-width: 768px) {
+            .paragraph-card {
+                min-width: 70vw;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .paragraph-card {
+                min-width: 50vw;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="chapter-selection" class="container">
+        <h1>Select Chapter</h1>
+    </div>
+
+    <div id="chapter-page" style="display: none;">
+        <div id="top-bar">
+            <button id="back-button">&#x25c0;</button>
+            <h3 id="chapter-title">Chapter Title</h3>
+        </div>
+
+        <div id="sub-chapter-container">
+        </div>
+
+    </div>
+
+    <script>
+        const chapterSelectionDiv = document.getElementById('chapter-selection');
+        const chapterPageDiv = document.getElementById('chapter-page');
+        const backButton = document.getElementById('back-button');
+        const chapterTitleDisplay = document.getElementById('chapter-title');
+        const subChapterContainer = document.getElementById('sub-chapter-container');
+
+        let bookData;
+        let currentChapterKey;
+        let subChapterKeys = [];
+
+        async function fetchBookData() {
+            try {
+                const response = await fetch('https://raw.githubusercontent.com/naufal-makarim/WNF/refs/heads/main/book.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                bookData = await response.json();
+                renderChapterSelection();
+            } catch (error) {
+                console.error("Could not fetch book data:", error);
+                chapterSelectionDiv.innerHTML = `<h1>Error loading book</h1><p>Could not load book data. Please check console for details.</p>`;
+            }
+        }
+
+        function renderChapterSelection() {
+            chapterSelectionDiv.innerHTML = '<h1>Select Chapter</h1>';
+            for (const chapterKey in bookData) {
+                if (bookData.hasOwnProperty(chapterKey)) {
+                    const chapterButton = document.createElement('div');
+                    chapterButton.classList.add('chapter-button');
+                    chapterButton.textContent = chapterKey;
+                    chapterButton.addEventListener('click', () => loadChapter(chapterKey));
+                    chapterSelectionDiv.appendChild(chapterButton);
+                }
+            }
+        }
+
+        function loadChapter(chapterKey) {
+            currentChapterKey = chapterKey;
+            subChapterKeys = Object.keys(bookData[chapterKey]);
+            renderChapterPage();
+            chapterSelectionDiv.style.display = 'none';
+            chapterPageDiv.style.display = 'flex';
+        }
+
+        function renderChapterPage() {
+            subChapterContainer.innerHTML = '';
+            chapterTitleDisplay.textContent = currentChapterKey;
+            subChapterKeys.forEach((subChapterKey, index) => {
+                const subChapterDiv = createSubChapterDiv(subChapterKey, bookData[currentChapterKey][subChapterKey], index);
+                subChapterContainer.appendChild(subChapterDiv);
+            });
+        }
+
+        function createSubChapterDiv(subChapterKey, paragraphs, index) {
+            const subChapterDiv = document.createElement('div');
+            subChapterDiv.classList.add('sub-chapter');
+            subChapterDiv.setAttribute('data-subchapter-index', index);
+
+            const subChapterTitle = document.createElement('h2');
+            subChapterTitle.textContent = subChapterKey;
+            subChapterTitle.setAttribute('data-sub-chapter-number', convertToLetter(index + 1));
+            subChapterDiv.appendChild(subChapterTitle);
+
+            const paragraphContainer = document.createElement('div');
+            paragraphContainer.classList.add('paragraph-container');
+
+            paragraphs.forEach((paragraphText, paraIndex) => {
+                const paragraphCard = createParagraphCard(paragraphText, paraIndex);
+                paragraphContainer.appendChild(paragraphCard);
+            });
+            subChapterDiv.appendChild(paragraphContainer);
+            return subChapterDiv;
+        }
+
+        function createParagraphCard(paragraphText, index) {
+            const paragraphCard = document.createElement('div');
+            paragraphCard.classList.add('paragraph-card');
+            paragraphCard.setAttribute('data-paragraph-index', index);
+
+            const paragraphNumber = document.createElement('span');
+            paragraphNumber.classList.add('paragraph-number');
+            paragraphNumber.textContent = convertToRoman(index + 1);
+            paragraphCard.appendChild(paragraphNumber);
+
+            const paragraphElement = document.createElement('p');
+            paragraphElement.textContent = paragraphText;
+            paragraphCard.appendChild(paragraphElement);
+            return paragraphCard;
+        }
+
+        function convertToRoman(num) {
+            const romanMap = {
+                1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII', 8: 'VIII', 9: 'IX', 10: 'X',
+                11: 'XI', 12: 'XII', 13: 'XIII', 14: 'XIV', 15: 'XV', 16: 'XVI', 17: 'XVII', 18: 'XVIII', 19: 'XIX', 20: 'XX',
+            };
+            return romanMap[num] || 'N/A';
+        }
+
+        function convertToLetter(num) {
+            return String.fromCharCode(64 + num);
+        }
+
+        backButton.addEventListener('click', () => {
+            chapterPageDiv.style.display = 'none';
+            chapterSelectionDiv.style.display = 'flex';
+        });
+
+        fetchBookData();
+
+    </script>
+</body>
+</html>
